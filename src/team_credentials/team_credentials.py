@@ -1,3 +1,7 @@
+'''
+Main module contains TeamCredentials class
+'''
+
 import json
 import re
 from base64 import b64decode, b64encode
@@ -11,10 +15,16 @@ from Crypto.Random import get_random_bytes
 
 
 class AesGcm:
+    '''
+    AES GCM class for encryption and decryption messages
+    '''
     def __init__(self):
         self.json_k = ['nonce', 'ciphertext', 'tag', 'salt']
 
     def encryption(self, password: str, msg: str) -> str:
+        '''
+        Encrypts message using AES GCM with specified password and random salt
+        '''
         salt = get_random_bytes(32)
         key = scrypt(
             password, b64encode(salt).decode('utf8'), key_len=32, N=2**17, r=8, p=1, num_keys=1)
@@ -33,6 +43,9 @@ class AesGcm:
         return encrypted_msg
 
     def decryption(self, password: str, encrypted_msg: str) -> str:
+        '''
+        Decrypts encrypted message using AES GCM with specified password
+        '''
 
         b64 = json.loads(encrypted_msg)
         json_v = {}
@@ -55,7 +68,9 @@ class AesGcm:
 
 
 class TeamCredentials:
-
+    '''
+    Main class for team_credentials - git team credentials aes storage system
+    '''
     def __init__(self, conf: Path):
         self.conf: Dict[str, str] = {}
         self._read_conf(conf)
@@ -75,7 +90,9 @@ class TeamCredentials:
             self.conf = json.load(json_f)
 
     def check(self):
-        pass
+        '''
+        Compares team (master) credential json with specified personal credential json.
+        '''
 
     def _get_credentials(self):
         headers = {"PRIVATE-TOKEN": self.gitlab_personal_token}
@@ -98,6 +115,9 @@ class TeamCredentials:
         return team_resp, cred_resp
 
     def get_credentials(self, cred: str, local: bool = False) -> Dict[str, str]:
+        '''
+        Get credentials from gitlab or local folder
+        '''
         if local:
             team_json, cred_json = self._get_local_credentials()
         else:
@@ -112,6 +132,9 @@ class TeamCredentials:
         return cred_dict
 
     def encrypt(self, msg: str, public: bool = False):
+        '''
+        Encrypts message using conf.json with specified passwords
+        '''
         if public:
             return self.aes.encryption(
                 self.conf['team_master_password'], msg + self.conf['team_master_salt'])
@@ -123,6 +146,9 @@ class TeamCredentials:
             dict_msg: Dict[str, Dict[str, Union[str, int]]],
             only_cred: bool = False
             ) -> Union[tuple, str]:
+        '''
+        Encrypts credential dict using conf.json with specified passwords
+        '''
         team_dic: Dict[str, Dict[str, Dict[str, Union[str, int]]]] = {cred: {}}
         cred_dic: Dict[str, Dict[str, Dict[str, Union[str, int]]]] = {cred: {}}
 
@@ -142,6 +168,9 @@ class TeamCredentials:
         return json.dumps(team_dic, indent=4), json.dumps(cred_dic, indent=4)
 
     def decrypt(self, encrypted_msg: str, public: bool = False):
+        '''
+        Decrypts message using conf.json with specified passwords
+        '''
         if public:
             msg = self.aes.decryption(self.conf['team_master_password'], encrypted_msg)
             return re.sub(re.escape(self.conf['team_master_salt']) + '$', '', msg)
