@@ -25,6 +25,9 @@ class AesGcm:
         '''
         Encrypts message using AES GCM with specified password and random salt
         '''
+        if not isinstance(password, str) or not isinstance(msg, str):
+            raise TypeError
+
         salt = get_random_bytes(32)
         key = scrypt(
             password, b64encode(salt).decode('utf8'), key_len=32, N=2**17, r=8, p=1, num_keys=1)
@@ -46,6 +49,8 @@ class AesGcm:
         '''
         Decrypts encrypted message using AES GCM with specified password
         '''
+        if not isinstance(password, str) or not isinstance(encrypted_msg, str):
+            raise TypeError
 
         b64 = json.loads(encrypted_msg)
         json_v = {}
